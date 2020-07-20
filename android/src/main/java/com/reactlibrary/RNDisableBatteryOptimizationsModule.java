@@ -2,6 +2,7 @@ package com.reactlibrary;
 
 import android.app.Activity;
 
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -19,12 +20,14 @@ public class RNDisableBatteryOptimizationsModule extends ReactContextBaseJavaMod
   static final int REQUEST_REMOVAL_BATTERY_OPTIMIZATION = 1;
 
   private final ReactApplicationContext reactContext;
-  private Promise promise;
+  private Promise promise = null;
 
   private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent intent) {
-      promise.resolve(resultCode);
+      if (promise != null) {
+        promise.resolve(resultCode);
+      }
     }
   };
 
@@ -47,16 +50,18 @@ public class RNDisableBatteryOptimizationsModule extends ReactContextBaseJavaMod
   }
 
   @ReactMethod
-  public void isBatteryOptimizationEnabled(Promise promise) {
+  public void isBatteryOptimizationEnabled(Callback finish) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       String packageName = reactContext.getPackageName();
       PowerManager pm = (PowerManager) reactContext.getSystemService(reactContext.POWER_SERVICE);
       if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-        promise.resolve(true);
-        return;
+        finish.invoke(true);
+      } else {
+        finish.invoke(false);
       }
+    } else {
+      finish.invoke(false);
     }
-    promise.resolve(false);
   }
 
   @ReactMethod
